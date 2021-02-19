@@ -11,7 +11,7 @@
 #define QUEUE_SIZE 200
 #define BUF_SIZE 64
 #define WAIT_SECONDS 10
-#define SLEEP_SECONDS 10
+#define SLEEP_SECONDS 30
 
 using namespace std;
 

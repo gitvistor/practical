@@ -85,7 +85,7 @@ bool BlockingQueue<T>::take(T &item, int waitTime)
 {
     std::unique_lock<std::mutex> lock(m_mtx);
 
-    if (!m_consumer.wait_for(lock, std::chrono::milliseconds{waitTime}, [this]() {
+    if (!m_consumer.wait_for(lock, std::chrono::seconds{waitTime}, [this]() {
             return !m_queue.empty() || m_closed;
         }))
     {

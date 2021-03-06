@@ -98,9 +98,53 @@ void DeleteNode(PListNode *pListHead, PListNode pToBeDeleted)
 	}
 }
 
+void DeleteDuplication(PListNode *pHeaad)
+{
+	if (!pHeaad || !*pHeaad)
+		return;
+
+	PListNode pPreNode{nullptr};
+	PListNode pNode = *pHeaad;
+	while (pNode)
+	{
+		PListNode pNext = pNode->m_pNext;
+		bool needDelete = false;
+		if (pNext && pNext->m_nValue == pNode->m_nValue)
+			needDelete = true;
+
+		if (!needDelete)
+		{
+			pPreNode = pNode;
+			pNode = pNode->m_pNext;
+		}
+		else
+		{
+			int value = pNext->m_nValue;
+			PListNode pToBeDel = pNode;
+			while (pToBeDel && pToBeDel->m_nValue == value)
+			{
+				pNext = pToBeDel->m_pNext;
+				delete pToBeDel;
+				pToBeDel = nullptr;
+				pToBeDel = pNext;
+			}
+
+			if (!pPreNode)
+			{
+				*pHeaad = pNext;
+			}
+			else
+			{
+				pPreNode->m_pNext = pNext;
+			}
+			pNode = pNext;
+		}
+	}
+}
+
 int main(int argc, const char *argv[])
 {
-	std::array<int, SIZE> arr{5, 3, 2, 9, 1, 8, 4, 6};
+	std::array<int, SIZE> arr{5, 5, 3, 2, 2, 9, 1, 1, 8, 4, 6};
 	auto pHead = CreateNode(arr);
 	std::cout << "original array: ";
 	PrintNode(pHead);
@@ -110,6 +154,11 @@ int main(int argc, const char *argv[])
 		DeleteNode(&pHead, pNode);
 
 	std::cout << "after delete " << DEL_NUM << ": ";
+	PrintNode(pHead);
+
+	DeleteDuplication(&pHead);
+
+	std::cout << "delete duplication: ";
 	PrintNode(pHead);
 
 	return 0;

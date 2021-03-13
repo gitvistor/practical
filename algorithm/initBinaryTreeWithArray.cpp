@@ -10,7 +10,7 @@ struct BinaryTreeNode
 };
 
 BinaryTreeNode *createBinaryTree(int *arr, int length)
-{ 
+{
     if (!arr || length <= 0)
         return nullptr;
 
@@ -37,12 +37,15 @@ BinaryTreeNode *createBinaryTree(int *arr, int length)
     {
         node = nodeQueue.front();
         nodeQueue.pop();
-        if(!node)
+        if (!node)
             continue;
         nodeQueue.push(nodes[index++]);
         node->m_pLeft = nodeQueue.back();
-        nodeQueue.push(nodes[index++]);
-        node->m_pRight = nodeQueue.back();
+        if (index < length)
+        {
+            nodeQueue.push(nodes[index++]);
+            node->m_pRight = nodeQueue.back();
+        }
     }
     return nodes[0];
 }
@@ -79,7 +82,7 @@ void postOrder(BinaryTreeNode *pNode)
 
 int main(int argc, const char *argv[])
 {
-    int arr[] = {1, 3, 5, 0, 6, 7, 8, 0, 9};
+    int arr[] = {1, 3, 7, 4, 0, 6, 0, 8, 9};
     int length = sizeof(arr) / sizeof(int);
     BinaryTreeNode *pNode = createBinaryTree(arr, length);
 

@@ -1,28 +1,26 @@
 
-#include "time_heap.h"
+#include "time_list.h"
 #include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/epoll.h>
 #include <arpa/inet.h>
 #include <signal.h>
 #include <unistd.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <cstdlib>
-#include <sys/epoll.h>
-#include <pthread.h>
-#include <vector>
-#include <memory>
 #include <cstring>
 #include <cassert>
+#include <iostream>
 
-const int FD_LIMIT = 65535;
-const int MAX_EVENT_NUNBER = 1024;
-const int TIME_SHOT = 5;
-const int INTERVAL = 15;
-const int INIT_HEAP_SIZE = 2;
+#define FD_LIMIT 100
+#define MAX_EVENT_NUNBER 1024
+#define TIME_SHOT 5
+#define INTERVAL 15
 
 static int pipefd[2];
 static int epollfd = 0;
-static std::shared_ptr<time_heap> timer_list;
+static sort_timer_lst timerlist;
 
 int setnonblocking(int fd)
 {
@@ -38,6 +36,7 @@ void addfd(int fd)
     event.data.fd = fd;
     event.events = EPOLLIN | EPOLLET;
     epoll_ctl(epollfd, EPOLL_CTL_ADD, fd, &event);
+    setnonblocking(fd);
 }
 
 void sig_handler(int sig)
@@ -52,14 +51,14 @@ void addsig(int sig)
     struct sigaction sa;
     memset(&sa, '\0', sizeof(sa));
     sa.sa_handler = sig_handler;
-    sa.sa_flags = SA_RESTART;
+    sa.sa_flags |= SA_RESTART;
     sigfillset(&sa.sa_mask);
     assert(sigaction(sig, &sa, NULL) != -1);
 }
 
 void timer_handler()
 {
-    timer_list->tick();
+    timerlist.tick();
     alarm(TIME_SHOT);
 }
 
@@ -91,11 +90,7 @@ int main(int argc, char *argv[])
     int listenfd = socket(PF_INET, SOCK_STREAM, 0);
     assert(listenfd >= 0);
 
-    int on = 1;
-    int ret = setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
-    assert(ret != -1);
-
-    ret = bind(listenfd, (struct sockaddr *)&address, sizeof(address));
+    int ret = bind(listenfd, (struct sockaddr *)&address, sizeof(address));
     assert(ret != -1);
 
     ret = listen(listenfd, 5);
@@ -118,11 +113,9 @@ int main(int argc, char *argv[])
     addsig(SIGINT);
 
     bool stop_server = false;
-    std::vector<client_data> users(FD_LIMIT);
+    client_data *users = new client_data[FD_LIMIT];
     bool timeout = false;
     alarm(TIME_SHOT);
-
-    timer_list.reset(new time_heap(INIT_HEAP_SIZE));
 
     while (!stop_server)
     {
@@ -142,14 +135,16 @@ int main(int argc, char *argv[])
                 socklen_t client_addrLength = sizeof(client_address);
                 int connfd = accept(listenfd, (struct sockaddr *)&client_address, &client_addrLength);
                 addfd(connfd);
-                users[connfd].addr = client_address;
+                users[connfd].address = client_address;
                 users[connfd].sockfd = connfd;
                 std::cout << "accept user: " << connfd << std::endl;
-                heap_timer *timer = new heap_timer(INTERVAL);
-                timer_list->add_timer(timer);
+                util_timer *timer = new util_timer;
                 timer->user_data = &users[connfd];
-                timer->timeout_callback = time_callback;
+                timer->cb_func = time_callback;
+                time_t cur = time(NULL);
+                timer->expire = cur + INTERVAL;
                 users[connfd].timer = timer;
+                timerlist.add_timer(timer);
             }
             else if (sockfd == pipefd[0] && events[i].events & EPOLLIN)
             {
@@ -167,6 +162,7 @@ int main(int argc, char *argv[])
                         case SIGALRM:
                         {
                             timeout = true;
+                            std::cout << "a timer is expired" << std::endl;
                             break;
                         }
                         case SIGTERM:
@@ -185,7 +181,7 @@ int main(int argc, char *argv[])
                 memset(users[sockfd].buf, '\0', BUFFER_SIZE);
                 ret = recv(sockfd, users[sockfd].buf, BUFFER_SIZE - 1, 0);
                 std::cout << "get " << ret << " bytes from client " << sockfd << ", data: " << users[sockfd].buf;
-                heap_timer *timer = users[sockfd].timer;
+                util_timer *timer = users[sockfd].timer;
                 if (ret < 0)
                 {
                     if (errno != EAGAIN)
@@ -193,7 +189,7 @@ int main(int argc, char *argv[])
                         time_callback(&users[sockfd]);
                         if (timer)
                         {
-                            timer_list->del_timer(timer);
+                            timerlist.del_timer(timer);
                         }
                     }
                 }
@@ -202,20 +198,17 @@ int main(int argc, char *argv[])
                     time_callback(&users[sockfd]);
                     if (timer)
                     {
-                        timer_list->del_timer(timer);
+                        timerlist.del_timer(timer);
                     }
                 }
                 else
                 {
                     if (timer)
                     {
-                        // heap_timer *new_timer = new heap_timer(3 * TIME_SHOT);
-                        // timer_list->adjust_timer(timer, new_timer);
-                        // new_timer->user_data = &users[sockfd];
-                        // new_timer->timeout_callback = time_callback;
-                        // users[sockfd].timer = new_timer;
-                        timer->update_time(INTERVAL);
-                        timer_list->adjust_heap();
+                        time_t cur = time(NULL);
+                        timer->expire = cur + INTERVAL;
+                        std::cout << "adjust timer once\n";
+                        timerlist.adjust_timer(timer);
                     }
                 }
             }
@@ -232,7 +225,6 @@ int main(int argc, char *argv[])
     }
 
     close(listenfd);
-    close(epollfd);
     close(pipefd[1]);
     close(pipefd[0]);
 

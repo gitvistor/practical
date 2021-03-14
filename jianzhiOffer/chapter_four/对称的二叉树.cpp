@@ -50,25 +50,6 @@ BinaryTreeNode *createBinaryTree(int *arr, int length)
     return nodes[0];
 }
 
-void MirrorRecursively(BinaryTreeNode *pNode)
-{
-    if (!pNode)
-        return;
-
-    if (!pNode->m_pLeft && !pNode->m_pRight)
-        return;
-
-    BinaryTreeNode *pTemp = pNode->m_pLeft;
-    pNode->m_pLeft = pNode->m_pRight;
-    pNode->m_pRight = pTemp;
-
-    if (pNode->m_pLeft)
-        MirrorRecursively(pNode->m_pLeft);
-
-    if (pNode->m_pRight)
-        MirrorRecursively(pNode->m_pRight);
-}
-
 void inOrder(BinaryTreeNode *pNode)
 {
     if (!pNode)
@@ -79,20 +60,36 @@ void inOrder(BinaryTreeNode *pNode)
     inOrder(pNode->m_pRight);
 }
 
+bool isSymmetrical(BinaryTreeNode *pRoot1, BinaryTreeNode *pRoot2)
+{
+    if (!pRoot1 && !pRoot2)
+        return true;
+
+    if (!pRoot1 || !pRoot2)
+        return false;
+
+    if (pRoot1->m_nValue != pRoot2->m_nValue)
+        return false;
+
+    return isSymmetrical(pRoot1->m_pLeft, pRoot2->m_pRight) && isSymmetrical(pRoot1->m_pRight, pRoot2->m_pLeft);
+}
+
+bool isSymmetrical(BinaryTreeNode *pRoot)
+{
+    return isSymmetrical(pRoot, pRoot);
+}
+
 int main(int argc, const char *argv[])
 {
-    int arr[] = {8, 6, 10, 5, 7, 9, 11};
+    int arr[] = {8, 6, 6, 5, 7, 7, 5};
     BinaryTreeNode *pRoot = createBinaryTree(arr, sizeof(arr) / sizeof(int));
 
     std::cout << "tree: ";
     inOrder(pRoot);
     std::cout << std::endl;
 
-    MirrorRecursively(pRoot);
-
-    std::cout << "mirror: ";
-    inOrder(pRoot);
-    std::cout << std::endl;
+    bool ret = isSymmetrical(pRoot);
+    std::cout << (ret ? "symmetrical" : "not symmetrical") << std::endl;
 
     return 0;
 }

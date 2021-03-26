@@ -7,10 +7,6 @@ set args p1 p2
 b merge_sort<int>
 b +/- offset
 b 72 if i==0
-//std::string str
-b 60 if strcmp(str,"hello")==0
-//const char* pstr
-b 60 if strcmp(pstr,"hello")==0
 
 set listsize 20
 l 7,34

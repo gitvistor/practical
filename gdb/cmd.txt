@@ -1,0 +1,64 @@
+
+gdb -tui
+layout src/asm/next/split
+
+set args p1 p2
+
+b merge_sort<int>
+b +/- offset
+b 72 if i==0
+//std::string str
+b 60 if strcmp(str,"hello")==0
+//const char* pstr
+b 60 if strcmp(pstr,"hello")==0
+
+set listsize 20
+l 7,34
+l 3,
+
+p num=5
+p /x i
+
+display {seg,low,mid,high}
+
+display arr
+
+display *arr@len
+
+display *matrix[0]@6
+
+display **matrix@2@3
+
+undisplay 2
+info display
+info frame
+info args
+
+watch/rwatch/awatch num
+info watchpoints
+
+x /6xb 0x401d88
+
+enable/disable 5
+
+//exit loop
+u/until
+//run to 46
+u/until 46
+
+jump 39
+
+set p array/pretty (on/off)
+
+up/down
+
+shell ls
+
+set logging on merge.txt
+set logging off
+show logging
+
+info program
+
+//-g3
+macro expand ADD(2,3)

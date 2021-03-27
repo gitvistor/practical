@@ -7,13 +7,16 @@ set args p1 p2
 b merge_sort<int>
 b +/- offset
 b 72 if i==0
-
+tb/tbreak 23
+ignore 1 8
+ 
 set listsize 20
 l 7,34
 l 3,
 
 p num=5
 p /x i
+p *pstr@5
 
 display {seg,low,mid,high}
 
@@ -30,12 +33,15 @@ info display
 info frame
 info args
 
+thread apply 2 3 i locals
+
 watch/rwatch/awatch num
 info watchpoints
 
 x /6xb 0x401d88
 
 enable/disable 5
+enable count 7 2
 
 //exit loop
 u/until
@@ -46,6 +52,9 @@ jump 39
 
 set p array/pretty (on/off)
 
+whatis pstr
+ptype TEST_NODE
+
 up/down
 
 shell ls
@@ -54,7 +63,18 @@ set logging on merge.txt
 set logging off
 show logging
 
-info program
+dir dirname
+show dir
+
+shell export EDITOR=/usr/bin/vim
+edit cond_fun_test
+edit test.cpp:17
+shell g++ -g -std=c++11 -pthread test.cpp
+
+disassemble cond_fun_test
 
 //-g3
 macro expand ADD(2,3)
+
+info program
+info registers (rsi)

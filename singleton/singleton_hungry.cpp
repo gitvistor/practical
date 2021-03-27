@@ -4,6 +4,7 @@
 #include <mutex>
 #include <thread>
 #include <algorithm>
+#include <functional>
 
 using namespace std;
 
@@ -67,7 +68,7 @@ int main(int argc,char*argv[])
 		}));
 	}
 
-	std::for_each(vec.begin(), vec.end(), std::mem_fn(std::thread::join));
+	std::for_each(vec.begin(), vec.end(), std::mem_fn(&std::thread::join));
 
 	return 0;
 }

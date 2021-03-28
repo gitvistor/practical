@@ -1,6 +1,8 @@
 
 gdb -tui
 layout src/asm/next/split
+Ctrl + L
+Ctrl + x a
 
 set args p1 p2
 
